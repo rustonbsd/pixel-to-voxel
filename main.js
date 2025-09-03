@@ -1,17 +1,12 @@
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
-const phoneEl = document.getElementById("phone");
+// 3D North arrow elements
+const anchorEl = document.getElementById("anchor");
+const northArrowEl = document.getElementById("northArrow");
+const northArrowShadowEl = document.getElementById("northArrowShadow");
 const startBtn = document.getElementById("start");
 
-// CSS transform implementing R = Rz(yaw) * Rx(pitch) * Ry(roll)
-// (Z-X-Y / yaw-pitch-roll) so that pitching the device (lifting from table to portrait)
-// corresponds to rotation about the device X axis without being mis-attributed to roll.
-// Note: CSS applies right-to-left.
-function cssFromYPR(yawDeg, pitchDeg, rollDeg) {
-  // Map world yaw (about Up) to rotateY so spinning upright uses vertical axis,
-  // then apply pitch about X, and roll about Z (screen normal) last.
-  return `rotateY(${-yawDeg}deg) rotateX(${pitchDeg}deg) rotateZ(${rollDeg}deg) rotateY(180deg)`; // final flip so front face matches screen
-}
+// Only need yaw heading -> North. Arrow graphic points upward (0deg = North)
 
 // Quaternion [x, y, z, w] -> row-major 3x3 (device -> world ENU)
 function quatToMat3(qx, qy, qz, qw) {
@@ -25,90 +20,26 @@ function quatToMat3(qx, qy, qz, qw) {
   ];
 }
 
-// Extract yaw/pitch/roll for R = Rz(yaw)*Rx(pitch)*Ry(roll) (Z-X-Y Tait-Bryan)
-// This sequence makes a pure lift (device x-axis rotation) map cleanly to pitch.
-function mat3ToYPR(R) {
-  const r00 = R[0], r01 = R[1], r02 = R[2];
-  const r10 = R[3], r11 = R[4], r12 = R[5];
-  const r20 = R[6], r21 = R[7], r22 = R[8];
-
-  // pitch = asin(r21) (clamp for safety)
-  const sp = Math.max(-1, Math.min(1, r21));
-  const pitch = Math.asin(sp);
-
-  let yaw, roll;
-  // Check for gimbal lock (|cos(pitch)| ~ 0)
-  if (Math.abs(Math.cos(pitch)) > 1e-6) {
-    roll = Math.atan2(-r20, r22); // from -cp*sr, cp*cr
-    yaw = Math.atan2(r10, r00);   // standard
-  } else {
-    // Gimbal lock: set roll = 0, derive yaw from alternative elements
-    roll = 0;
-    yaw = Math.atan2(-r01, r11);
-  }
-
-  return [
-    yaw * 180 / Math.PI,
-    pitch * 180 / Math.PI,
-    roll * 180 / Math.PI,
-  ];
+// Compute device->world matrix (already) then build world-North vector in device frame: n_dev = R^T * (0,1,0) = (r10,r11,r12)
+// Align base +Y (0,1,0) to n_dev via axis-angle.
+function northVectorDevice(R){ return [ R[3], R[4], R[5] ]; }
+function normalize(v){ const m=Math.hypot(v[0],v[1],v[2]); return m? [v[0]/m,v[1]/m,v[2]/m]:[0,1,0]; }
+function rotationFromYTo(v){
+  const b = normalize(v);
+  const dot = b[1]; // (0,1,0)·b = b_y
+  if (dot > 0.9995) return {axis:[0,1,0], angleDeg:0};
+  if (dot < -0.9995) return {axis:[1,0,0], angleDeg:180};
+  // axis = a x b where a=(0,1,0)
+  const axis = [ b[2], 0, -b[0] ];
+  const axisLen = Math.hypot(axis[0],axis[1],axis[2]);
+  const ax = axis[0]/axisLen, ay=0, az=axis[2]/axisLen;
+  const angleRad = Math.atan2(Math.hypot(axis[0],axis[2]), dot);
+  return {axis:[ax,ay,az], angleDeg: angleRad * 180/Math.PI };
 }
+// (Removed inversion) Arrow points toward true North in world frame.
+function cssRotateAxisAngle(axis, angleDeg){ return `rotate3d(${axis[0]},${axis[1]},${axis[2]},${angleDeg}deg)`; }
 
-// Dynamic face labeling: for each phone face normal (device frame),
-// compute which world direction (E,W,N,S,Up,Down) it points most toward.
-const faces = {
-  front:  [0, 0,  1],
-  back:   [0, 0, -1],
-  right:  [1, 0,  0],
-  left:  [-1, 0,  0],
-  top:    [0, 1,  0],
-  bottom: [0,-1,  0],
-};
-const worldDirs = [
-  { name: "East",  v: [ 1,  0,  0] },
-  { name: "West",  v: [-1,  0,  0] },
-  { name: "North", v: [ 0,  1,  0] },
-  { name: "South", v: [ 0, -1,  0] },
-  { name: "Up",    v: [ 0,  0,  1] },
-  { name: "Down",  v: [ 0,  0, -1] },
-];
-function dot(a,b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
-function mulMat3Vec3(R, v) {
-  return [
-    R[0]*v[0] + R[1]*v[1] + R[2]*v[2],
-    R[3]*v[0] + R[4]*v[1] + R[5]*v[2],
-    R[6]*v[0] + R[7]*v[1] + R[8]*v[2],
-  ];
-}
-// Visualization note: we subtract 90° from pitch when rendering so that
-// (Deprecated) Previous approach subtracted 90° from pitch. Now we instead
-// apply a fixed post-rotation Rx(-90°) to the device->world matrix before
-// Euler extraction so yaw stays about world Up when upright.
-function mulMat3(A,B){
-  return [
-    A[0]*B[0]+A[1]*B[3]+A[2]*B[6], A[0]*B[1]+A[1]*B[4]+A[2]*B[7], A[0]*B[2]+A[1]*B[5]+A[2]*B[8],
-    A[3]*B[0]+A[4]*B[3]+A[5]*B[6], A[3]*B[1]+A[4]*B[4]+A[5]*B[7], A[3]*B[2]+A[4]*B[5]+A[5]*B[8],
-    A[6]*B[0]+A[7]*B[3]+A[8]*B[6], A[6]*B[1]+A[7]*B[4]+A[8]*B[7], A[6]*B[2]+A[7]*B[5]+A[8]*B[8],
-  ];
-}
-// Rotate -90° about device X: Rx(-90) = [[1,0,0],[0,0,1],[0,-1,0]] (row-major)
-const RX_NEG_90 = [
-  1, 0, 0,
-  0, 0, 1,
-  0,-1, 0,
-];
-function relabelFaces(R) {
-  for (const [cls, nDev] of Object.entries(faces)) {
-    const nWorld = mulMat3Vec3(R, nDev); // device->world
-    let best = worldDirs[0], bestDot = dot(nWorld, best.v);
-    for (let i=1; i<worldDirs.length; i++) {
-      const s = dot(nWorld, worldDirs[i].v);
-      if (s > bestDot) { best = worldDirs[i]; bestDot = s; }
-    }
-    const el = document.querySelector(`.${cls}`);
-    el.textContent = `${cls[0].toUpperCase()+cls.slice(1)} → ${best.name}`;
-  }
-}
+// No face relabeling needed now.
 
 async function start() {
   // Try to lock to portrait so device axes are consistent
@@ -123,17 +54,13 @@ async function start() {
     sensor.addEventListener("reading", () => {
       const q = sensor.quaternion; // [x,y,z,w]
       if (!q) return;
-  const R = quatToMat3(q[0], q[1], q[2], q[3]); // device -> world (ENU)
-  const C = mulMat3(R, RX_NEG_90); // adjusted for visualization
-  const [yawDeg, pitchDeg, rollDeg] = mat3ToYPR(C);
-
-      // Apply rotation to phone box (portrait upright initially)
-  phoneEl.style.transform = cssFromYPR(yawDeg, pitchDeg, rollDeg);
-
-      // Update face labels with current world directions
-  relabelFaces(R); // labels reflect true orientation
-
-      hudEl.textContent = `yaw=${yawDeg.toFixed(1)}  pitch=${pitchDeg.toFixed(1)}  roll=${rollDeg.toFixed(1)} (deg)`;
+  const R = quatToMat3(q[0], q[1], q[2], q[3]);
+      const nDev = northVectorDevice(R);
+  const rot = rotationFromYTo(nDev); // toward North
+  const t = cssRotateAxisAngle(rot.axis, rot.angleDeg);
+    northArrowEl.style.transform = t + ' translateZ(10px)';
+    northArrowShadowEl.style.transform = t + ' translateZ(0px)';
+      hudEl.textContent = `northDev=(${nDev.map(v=>v.toFixed(2)).join(',')})`;
       statusEl.textContent = "Live (Absolute)";
     });
     sensor.addEventListener("error", (e) => {
@@ -149,11 +76,12 @@ async function start() {
         const q = sensor.quaternion;
         if (!q) return;
   const R = quatToMat3(q[0], q[1], q[2], q[3]);
-  const C = mulMat3(R, RX_NEG_90);
-  const [yawDeg, pitchDeg, rollDeg] = mat3ToYPR(C);
-  phoneEl.style.transform = cssFromYPR(yawDeg, pitchDeg, rollDeg);
-  relabelFaces(R);
-        hudEl.textContent = `rel yaw=${yawDeg.toFixed(1)} pitch=${pitchDeg.toFixed(1)} roll=${rollDeg.toFixed(1)} (deg)`;
+  const nDev = northVectorDevice(R);
+  const rot = rotationFromYTo(nDev);
+  const t = cssRotateAxisAngle(rot.axis, rot.angleDeg);
+    northArrowEl.style.transform = t + ' translateZ(10px)';
+    northArrowShadowEl.style.transform = t + ' translateZ(0px)';
+  hudEl.textContent = `rel northDev=(${nDev.map(v=>v.toFixed(2)).join(',')})`;
         statusEl.textContent = "Live (Relative)";
       });
       await sensor.start();

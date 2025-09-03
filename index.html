@@ -2,7 +2,7 @@
 <html>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>3D Phone Orientation (Rotation Vector)</title>
+  <title>3D North Arrow</title>
   <style>
     :root {
       --w: 160px;  /* phone width  (short side) */
@@ -19,84 +19,26 @@
 
     #hud { font-variant-numeric: tabular-nums; margin-top: 8px; }
 
-    /* 3D scene */
-    .scene {
-      width: 100%; height: 70vh; margin-top: 12px;
-      display: grid; place-items: center;
-      perspective: 900px;
-    }
-    .world {
-      position: relative;
-      width: 480px; height: 480px;
-      transform-style: preserve-3d;
-      border: 1px solid #263043;
-      background: radial-gradient(ellipse at center, #111a33 0%, #0b1020 60%);
-    }
+  .scene { width:100%; height:60vh; margin-top:20px; display:grid; place-items:center; perspective:900px; }
+  .world { position:relative; width:420px; height:420px; border:1px solid #263043; border-radius:12px; background:radial-gradient(circle at center,#111a33 0%,#0b1020 70%); transform-style:preserve-3d; }
+    .world { position:relative; width:420px; height:420px; border:1px solid #263043; border-radius:12px; background:radial-gradient(circle at center,#111a33 0%,#0b1020 70%); transform-style:preserve-3d; overflow:visible; }
 
-    /* World compass labels (fixed) */
-    .compass {
-      position: absolute; inset: 0; pointer-events: none; color: #8aa4d1;
-      font-weight: 600; letter-spacing: 0.06em;
-    }
-    .compass .n { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); }
-    .compass .s { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); }
-    .compass .e { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
-    .compass .w { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
-    .compass .up    { position: absolute; left: 8px; top: 8px; }
-    .compass .down  { position: absolute; left: 8px; bottom: 8px; }
-
-    /* Phone group */
-    .phone-group {
-      position: absolute; left: 50%; top: 55%;
-      transform: translate(-50%, -50%); /* keep phone centered */
-      transform-style: preserve-3d;
-    }
-
-    /* Phone box */
-    #phone {
-      position: relative; width: var(--w); height: var(--h);
-      transform-style: preserve-3d; transform-origin: 50% 50%;
-    }
-
-    .face {
-      position: absolute; display: grid; place-items: center;
-      background: rgba(230,237,243,0.08); color: #e6edf3;
-      border: 1px solid rgba(138,164,209,0.25);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.6);
-      font-weight: 600; user-select: none;
-      backface-visibility: hidden;
-    }
-
-    /* Dimensions per face */
-    .front, .back    { width: var(--w); height: var(--h); }
-    .left, .right    { width: var(--d); height: var(--h); }
-    .top, .bottom    { width: var(--w); height: var(--d); }
-
-    /* Place faces to form a thin box (front facing viewer initially) */
-  .front  { transform: translateZ(calc(var(--d) / 2)); }
-  /* Hide back face to prevent visual clipping plane */
-  .back   { display: none; }
-    .right  { transform: rotateY(90deg)  translateZ(calc(var(--w) / 2)); left: calc(50% - var(--d) / 2); }
-    .left   { transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); left: calc(50% - var(--d) / 2); }
-    .top    { transform: rotateX(90deg)  translateZ(calc(var(--h) / 2)); top: calc(50% - var(--d) / 2); }
-    .bottom { transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); top: calc(50% - var(--d) / 2); }
-
-    /* Make the "screen" look like a phone */
-    .front { background: linear-gradient(#0f152b, #0c1327); border-radius: 18px; }
-    .front::after {
-      content: ""; position: absolute; inset: 6px; border-radius: 14px;
-      border: 1px solid rgba(138,164,209,0.15);
-      box-shadow: inset 0 0 40px rgba(23,150,255,0.08);
-    }
-
-    /* Tiny axis widget on phone (local axes) */
-    .axes {
-      position: absolute; right: 6px; bottom: 6px; font-size: 10px;
-      opacity: 0.8; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 6px;
-    }
-    .axes .x { color: #ff6b6b; }  /* +X (East) */
-    .axes .y { color: #2ee6a6; }  /* +Y (North) */
-    .axes .z { color: #66a0ff; }  /* +Z (Up) */
+  /* 3D North arrow */
+  .anchor { position:absolute; left:50%; top:50%; transform-style:preserve-3d; transform:translate(-50%,-50%); width:0; height:0; }
+    .arrow3d { position:relative; transform-style:preserve-3d; width:0; height:0; }
+    /* Arrow geometry extends upward (-Y) so base stays at origin */
+    .shaft { position:absolute; left:-3px; top:-100px; width:6px; height:100px; background:linear-gradient(#203550,#3b5d88); border-radius:4px; box-shadow:0 0 4px rgba(0,180,255,0.35); }
+    .head { position:absolute; left:-10px; top:-138px; width:20px; height:40px; background:linear-gradient(#ff4662,#ff0030); clip-path:polygon(50% 0,100% 100%,0 100%); border-radius:4px 4px 10px 10px; box-shadow:0 0 6px rgba(255,70,98,0.55); }
+  .shadow { position:absolute; left:0; top:0; width:0; height:0; transform-style:preserve-3d; filter:blur(12px) opacity(0.25); }
+  .shadow .shaft { background:#000; box-shadow:none; }
+  .shadow .head { background:#000; box-shadow:none; }
+  .grid-plane { position:absolute; left:50%; top:50%; width:380px; height:380px; transform:translate(-50%,-50%) rotateX(90deg) translateZ(-40px); background:repeating-linear-gradient(0deg,#162339 0 24px,#1c2c47 24px 48px), repeating-linear-gradient(90deg,#162339 0 24px,#1c2c47 24px 48px); mix-blend-mode:screen; opacity:0.35; border:1px solid #263043; }
+    .grid-plane { position:absolute; left:50%; top:50%; width:380px; height:380px; transform:translate(-50%,-50%) rotateX(90deg) translateZ(-60px); background:repeating-linear-gradient(0deg,#162339 0 24px,#1c2c47 24px 48px), repeating-linear-gradient(90deg,#162339 0 24px,#1c2c47 24px 48px); mix-blend-mode:screen; opacity:0.18; border:1px solid #263043; }
+  .label { position:absolute; font-size:12px; font-weight:600; letter-spacing:0.06em; color:#8aa4d1; }
+  .label.n { top:4px; left:50%; transform:translateX(-50%); }
+  .label.s { bottom:4px; left:50%; transform:translateX(-50%); }
+  .label.e { top:50%; right:6px; transform:translateY(-50%); }
+  .label.w { top:50%; left:6px; transform:translateY(-50%); }
   </style>
 
   <body>
@@ -104,28 +46,23 @@
       <button id="start">Start sensors</button>
       <span id="status">Idle</span>
     </div>
-    <div id="hud">yaw=0.0 pitch=0.0 roll=0.0 (deg)</div>
+  <div id="hud">northVec=(0,1,0)</div>
 
     <div class="scene">
-      <div class="world">
-        <div class="compass">
-          <div class="n">N</div>
-          <div class="s">S</div>
-          <div class="e">E</div>
-          <div class="w">W</div>
-          <div class="up">Up</div>
-          <div class="down">Down</div>
-        </div>
-
-        <div class="phone-group">
-          <div id="phone">
-            <div class="face front">Front</div>
-            <div class="face back">Back</div>
-            <div class="face right">Right</div>
-            <div class="face left">Left</div>
-            <div class="face top">Top</div>
-            <div class="face bottom">Bottom</div>
-            <div class="axes"><span class="x">+X</span> <span class="y">+Y</span> <span class="z">+Z</span></div>
+      <div class="world" id="world">
+        <div class="grid-plane"></div>
+        <div class="label n">N</div>
+        <div class="label s">S</div>
+        <div class="label e">E</div>
+        <div class="label w">W</div>
+        <div class="anchor" id="anchor">
+          <div class="shadow" id="northArrowShadow">
+            <div class="shaft"></div>
+            <div class="head"></div>
+          </div>
+          <div id="northArrow">
+            <div class="shaft"></div>
+            <div class="head"></div>
           </div>
         </div>
       </div>
