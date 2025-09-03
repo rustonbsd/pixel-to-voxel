@@ -3,7 +3,14 @@ const hudEl = document.getElementById("hud");
 // 3D North arrow elements
 const anchorEl = document.getElementById("anchor");
 const northArrowEl = document.getElementById("northArrow");
-const northArrowShadowEl = document.getElementById("northArrowShadow");
+const northShadowEl = document.getElementById("northShadow");
+const eastArrowEl = document.getElementById("eastArrow");
+const eastShadowEl = document.getElementById("eastShadow");
+const westArrowEl = document.getElementById("westArrow");
+const westShadowEl = document.getElementById("westShadow");
+const upArrowEl = document.getElementById("upArrow");
+const upShadowEl = document.getElementById("upShadow");
+const arrowGroupEl = document.getElementById("arrowGroup");
 const startBtn = document.getElementById("start");
 
 // Only need yaw heading -> North. Arrow graphic points upward (0deg = North)
@@ -23,6 +30,8 @@ function quatToMat3(qx, qy, qz, qw) {
 // Compute device->world matrix (already) then build world-North vector in device frame: n_dev = R^T * (0,1,0) = (r10,r11,r12)
 // Align base +Y (0,1,0) to n_dev via axis-angle.
 function northVectorDevice(R){ return [ R[3], R[4], R[5] ]; }
+function eastVectorDevice(R){ return [ R[0], R[1], R[2] ]; }
+function upVectorDevice(R){ return [ R[6], R[7], R[8] ]; }
 function normalize(v){ const m=Math.hypot(v[0],v[1],v[2]); return m? [v[0]/m,v[1]/m,v[2]/m]:[0,1,0]; }
 function rotationFromYTo(v){
   const b = normalize(v);
@@ -56,11 +65,26 @@ async function start() {
       if (!q) return;
   const R = quatToMat3(q[0], q[1], q[2], q[3]);
       const nDev = northVectorDevice(R);
-  const rot = rotationFromYTo(nDev); // toward North
-  const t = cssRotateAxisAngle(rot.axis, rot.angleDeg);
-    northArrowEl.style.transform = t + ' translateZ(10px)';
-    northArrowShadowEl.style.transform = t + ' translateZ(0px)';
-      hudEl.textContent = `northDev=(${nDev.map(v=>v.toFixed(2)).join(',')})`;
+  const eDev = eastVectorDevice(R);
+  const wDev = eDev.map(v=>-v);
+  const uDev = upVectorDevice(R);
+  const nRot = rotationFromYTo(nDev);
+  const eRot = rotationFromYTo(eDev);
+  const wRot = rotationFromYTo(wDev);
+  const uRot = rotationFromYTo(uDev);
+  const tn = cssRotateAxisAngle(nRot.axis, nRot.angleDeg);
+  const te = cssRotateAxisAngle(eRot.axis, eRot.angleDeg);
+  const tw = cssRotateAxisAngle(wRot.axis, wRot.angleDeg);
+  const tu = cssRotateAxisAngle(uRot.axis, uRot.angleDeg);
+  northArrowEl.style.transform = tn;
+  northShadowEl.style.transform = tn;
+  eastArrowEl.style.transform = te;
+  eastShadowEl.style.transform = te;
+  westArrowEl.style.transform = tw;
+  westShadowEl.style.transform = tw;
+  upArrowEl.style.transform = tu;
+  upShadowEl.style.transform = tu;
+  hudEl.textContent = `N=(${nDev.map(v=>v.toFixed(2)).join(',')}) E=(${eDev.map(v=>v.toFixed(2)).join(',')}) U=(${uDev.map(v=>v.toFixed(2)).join(',')})`;
       statusEl.textContent = "Live (Absolute)";
     });
     sensor.addEventListener("error", (e) => {
@@ -77,11 +101,26 @@ async function start() {
         if (!q) return;
   const R = quatToMat3(q[0], q[1], q[2], q[3]);
   const nDev = northVectorDevice(R);
-  const rot = rotationFromYTo(nDev);
-  const t = cssRotateAxisAngle(rot.axis, rot.angleDeg);
-    northArrowEl.style.transform = t + ' translateZ(10px)';
-    northArrowShadowEl.style.transform = t + ' translateZ(0px)';
-  hudEl.textContent = `rel northDev=(${nDev.map(v=>v.toFixed(2)).join(',')})`;
+  const eDev = eastVectorDevice(R);
+  const wDev = eDev.map(v=>-v);
+  const uDev = upVectorDevice(R);
+  const nRot = rotationFromYTo(nDev);
+  const eRot = rotationFromYTo(eDev);
+  const wRot = rotationFromYTo(wDev);
+  const uRot = rotationFromYTo(uDev);
+  const tn = cssRotateAxisAngle(nRot.axis, nRot.angleDeg);
+  const te = cssRotateAxisAngle(eRot.axis, eRot.angleDeg);
+  const tw = cssRotateAxisAngle(wRot.axis, wRot.angleDeg);
+  const tu = cssRotateAxisAngle(uRot.axis, uRot.angleDeg);
+  northArrowEl.style.transform = tn;
+  northShadowEl.style.transform = tn;
+  eastArrowEl.style.transform = te;
+  eastShadowEl.style.transform = te;
+  westArrowEl.style.transform = tw;
+  westShadowEl.style.transform = tw;
+  upArrowEl.style.transform = tu;
+  upShadowEl.style.transform = tu;
+  hudEl.textContent = `rel N=(${nDev.map(v=>v.toFixed(2)).join(',')}) E=(${eDev.map(v=>v.toFixed(2)).join(',')}) U=(${uDev.map(v=>v.toFixed(2)).join(',')})`;
         statusEl.textContent = "Live (Relative)";
       });
       await sensor.start();
