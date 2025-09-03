@@ -35,16 +35,18 @@ function upVectorDevice(R){ return [ R[6], R[7], R[8] ]; }
 function normalize(v){ const m=Math.hypot(v[0],v[1],v[2]); return m? [v[0]/m,v[1]/m,v[2]/m]:[0,1,0]; }
 function rotationFromYTo(v){
   const b = normalize(v);
-  const dot = b[1]; // (0,1,0)·b = b_y
+  const dot = b[1];
   if (dot > 0.9995) return {axis:[0,1,0], angleDeg:0};
   if (dot < -0.9995) return {axis:[1,0,0], angleDeg:180};
   // axis = a x b where a=(0,1,0)
   const axis = [ b[2], 0, -b[0] ];
-  const axisLen = Math.hypot(axis[0],axis[1],axis[2]);
+  const axisLen = Math.hypot(axis[0],axis[1],axis[2]) || 1;
   const ax = axis[0]/axisLen, ay=0, az=axis[2]/axisLen;
   const angleRad = Math.atan2(Math.hypot(axis[0],axis[2]), dot);
   return {axis:[ax,ay,az], angleDeg: angleRad * 180/Math.PI };
 }
+// Invert yaw sense helper (flip horizontal components)
+function invertYawVec(v){ return [-v[0], v[1], -v[2]]; }
 // (Removed inversion) Arrow points toward true North in world frame.
 function cssRotateAxisAngle(axis, angleDeg){ return `rotate3d(${axis[0]},${axis[1]},${axis[2]},${angleDeg}deg)`; }
 
@@ -64,8 +66,10 @@ async function start() {
       const q = sensor.quaternion; // [x,y,z,w]
       if (!q) return;
   const R = quatToMat3(q[0], q[1], q[2], q[3]);
-      const nDev = northVectorDevice(R);
-  const eDev = eastVectorDevice(R);
+  let nDev = northVectorDevice(R);
+  let eDev = eastVectorDevice(R);
+  nDev = invertYawVec(nDev);
+  eDev = invertYawVec(eDev);
   const wDev = eDev.map(v=>-v);
   const uDev = upVectorDevice(R);
   const nRot = rotationFromYTo(nDev);
@@ -100,8 +104,10 @@ async function start() {
         const q = sensor.quaternion;
         if (!q) return;
   const R = quatToMat3(q[0], q[1], q[2], q[3]);
-  const nDev = northVectorDevice(R);
-  const eDev = eastVectorDevice(R);
+  let nDev = northVectorDevice(R);
+  let eDev = eastVectorDevice(R);
+  nDev = invertYawVec(nDev);
+  eDev = invertYawVec(eDev);
   const wDev = eDev.map(v=>-v);
   const uDev = upVectorDevice(R);
   const nRot = rotationFromYTo(nDev);

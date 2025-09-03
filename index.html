@@ -19,17 +19,17 @@
 
     #hud { font-variant-numeric: tabular-nums; margin-top: 8px; }
 
-  .scene { width:100%; height:60vh; margin-top:20px; display:grid; place-items:center; perspective:2200px; perspective-origin:50% 45%; }
-  .world { position:relative; width:460px; height:460px; border:1px solid #263043; border-radius:12px; background:radial-gradient(circle at center,#111a33 0%,#0b1020 70%); transform-style:preserve-3d; overflow:visible; }
+  .scene { width:100%; height:60vh; margin-top:20px; display:grid; place-items:center; perspective:2000px; perspective-origin:50% 48%; }
+  .world { position:relative; width:420px; height:420px; border:1px solid #263043; border-radius:12px; background:radial-gradient(circle at center,#111a33 0%,#0b1020 72%); transform-style:preserve-3d; overflow:visible; }
 
   /* 3D multi-axis arrows */
-  /* Pull anchor back (negative Z) so rotated tips stay within frustum */
-  .anchor { position:absolute; left:50%; top:50%; transform-style:preserve-3d; transform:translate(-50%,-50%) translateZ(-120px) scale(0.85); width:0; height:0; }
+  /* Anchor centered, no Z offset so arrows sit in middle of box */
+  .anchor { position:absolute; left:50%; top:50%; transform-style:preserve-3d; transform:translate(-50%,-50%) translateZ(220px) scale(0.95); width:0; height:0; }
   .arrow-group { position:absolute; left:0; top:0; transform-style:preserve-3d; width:0; height:0; }
   .arrow3d { position:absolute; left:0; top:0; transform-style:preserve-3d; width:0; height:0; backface-visibility:visible; }
   /* Base arrow geometry extends upward (-Y) */
-  .shaft { position:absolute; left:-3px; top:-52px; width:6px; height:52px; background:linear-gradient(#203550,#3b5d88); border-radius:4px; box-shadow:0 0 4px rgba(0,180,255,0.35); backface-visibility:visible; }
-  .head { position:absolute; left:-8px; top:-78px; width:16px; height:26px; background:linear-gradient(#ff4662,#ff0030); clip-path:polygon(50% 0,100% 100%,0 100%); border-radius:4px 4px 8px 8px; box-shadow:0 0 5px rgba(255,70,98,0.55); backface-visibility:visible; }
+  .shaft { position:absolute; left:-3px; top:-90px; width:6px; height:90px; background:linear-gradient(#203550,#3b5d88); border-radius:4px; box-shadow:0 0 4px rgba(0,180,255,0.35); backface-visibility:visible; }
+  .head { position:absolute; left:-9px; top:-124px; width:18px; height:34px; background:linear-gradient(#ff4662,#ff0030); clip-path:polygon(50% 0,100% 100%,0 100%); border-radius:4px 4px 8px 8px; box-shadow:0 0 5px rgba(255,70,98,0.55); backface-visibility:visible; }
   .arrow-n .shaft { background:linear-gradient(#ff4662,#ff0030); }
   .arrow-n .head { background:linear-gradient(#ff6b80,#ff2345); }
   .arrow-e .shaft { background:linear-gradient(#ff9d1d,#ffc14a); }
@@ -40,7 +40,7 @@
   .arrow-up .head { background:linear-gradient(#6ff3c5,#2ee6a6); }
   .shadow { position:absolute; left:0; top:0; width:0; height:0; transform-style:preserve-3d; filter:blur(10px) opacity(0.25); backface-visibility:visible; }
   .shadow .shaft, .shadow .head { background:#000 !important; box-shadow:none; }
-  .grid-plane { position:absolute; left:50%; top:50%; width:460px; height:460px; transform:translate(-50%,-50%) rotateX(90deg) translateZ(-400px); background:repeating-linear-gradient(0deg,#162339 0 32px,#1c2c47 32px 64px), repeating-linear-gradient(90deg,#162339 0 32px,#1c2c47 32px 64px); mix-blend-mode:screen; opacity:0.10; border:1px solid #263043; backface-visibility:visible; pointer-events:none; }
+  .grid-plane { position:absolute; left:50%; top:50%; width:440px; height:440px; transform:translate(-50%,-50%) rotateX(90deg) translateZ(-260px); background:repeating-linear-gradient(0deg,#162339 0 26px,#1c2c47 26px 52px), repeating-linear-gradient(90deg,#162339 0 26px,#1c2c47 26px 52px); mix-blend-mode:screen; opacity:0.14; border:1px solid #263043; backface-visibility:visible; pointer-events:none; }
   .label { position:absolute; font-size:12px; font-weight:600; letter-spacing:0.06em; color:#8aa4d1; }
   .label.n { top:4px; left:50%; transform:translateX(-50%); }
   .label.s { bottom:4px; left:50%; transform:translateX(-50%); }
